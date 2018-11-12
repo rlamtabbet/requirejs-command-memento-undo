@@ -1,0 +1,46 @@
+[
+  {
+    "key": "ONLINE",
+    "label": "Online",
+    "uniqueFilterValue": "ONLINE",
+    "headers": [],
+    "columnSetView": "USER-ONLINE-FILTER-VIEW",
+    "columns": [],
+    "autoHide": false,
+    "order": 1,
+    "itemCount": 0
+  },
+  {
+    "key": "OFFLINE",
+    "label": "Offline",
+    "uniqueFilterValue": "OFFLINE",
+    "headers": [],
+    "columnSetView": "USER-OFFLINE-FILTER-VIEW",
+    "columns": [],
+    "autoHide": false,
+    "order": 1,
+    "itemCount": 0
+  },
+  {
+    "key": "BUSY",
+    "label": "Busy",
+    "uniqueFilterValue": "BUSY",
+    "headers": [],
+    "columnSetView": "USER-BUSY-FILTER-VIEW",
+    "columns": [],
+    "autoHide": false,
+    "order": 1,
+    "itemCount": 0
+  },
+  {
+    "key": "AWAY",
+    "label": "Away",
+    "uniqueFilterValue": "AWAY",
+    "headers": [],
+    "columnSetView": "USER-AWAY-FILTER-VIEW",
+    "columns": [],
+    "autoHide": false,
+    "order": 1,
+    "itemCount": 0
+  }
+]

@@ -1,0 +1,16 @@
+<div class="result">
+    <div class="input-group input-group-sm">
+        <input class="form-control" type="text" id="handle" placeholder="Search book title...">
+        <button id="submit" class="input-group-btn button">
+            Fetch
+        </button>
+    </div>
+    <ul class="books_list">
+        {{#each books}}
+        <li>{{this}}</li>
+        {{/each}}
+    </ul>
+    <div class="filters"></div>
+    <div class="grid"></div>
+    <div class="progress"></div>
+</div>
