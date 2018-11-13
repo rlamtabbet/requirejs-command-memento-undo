@@ -1,175 +1,113 @@
-define(
-  [
-    "jquery.plugins",
-    "common/ObjectUtils",
-    "axios",
-    "constants/index",
-    "./connect",
-    "reducers/selectors",
-    "hbs!./myWidget",
-    "css!./myWidget"
-  ],
-  function($, ObjectUtils, axios, constants, connect, selectors, template) {
-    "use strict";
+define([
+  "jquery.plugins",
+  "common/ObjectUtils",
+  "common/constants/index",
+  "common/undoManager",
+  "widgets/circleDrawer/circleDrawer",
 
-    const {
-      FETCH_DATA_PENDING,
-      FETCH_DATA_FULFILLED,
-      FETCH_DATA_REJECTED
-    } = constants;
+  "hbs!./myWidget",
+  "css!./myWidget"
+], function($, ObjectUtils, constants, UndoManager, CircleDrawer, template) {
+  "use strict";
+
+  /**
+   * my widget.
+   * @class myWidget
+   * @memberof views.myWidget
+   */
+  var myWidget = $.widget("ux.myWidget", {
+    options: {
+      className: "ux-widget",
+      title: "Unavailable"
+    },
+
+    _create: function() {
+      var self = this;
+
+      self.element.addClass(self.options.className);
+
+      self.boundUpdateUI = self.updateUI.bind(self);
+
+      self.undoManager = new UndoManager();
+      self.undoManager.setCallback(self.boundUpdateUI);
+
+      self._render();
+      self._bindListener();
+
+      self._super();
+    },
 
     /**
-     * Books widget.
-     * @class myWidget
-     * @memberof views.myWidget
+     * The imported template should be used here to create the layout.
+     * @private
      */
-    const myWidget = $.widget("ux.myWidget", {
-      options: {
-        className: "ux-widget",
-        title: "Unavailable"
-      },
+    _render: function() {
+      var self = this;
 
-      _create: function() {
-        this.element.addClass(this.options.className);
+      // create the dom of this gadget using its template.
+      self.element.html(template());
 
-        this._render();
-        this._bindListener();
-        this._super();
-      },
+      self.$ctrlLimit = self.element.find("#ctrlLimit");
+      self.$btnUndo = self.element.find("#btnUndo");
+      self.$btnRedo = self.element.find("#btnRedo");
+      self.$btnClear = self.element.find("#btnClear");
+      self.$view = self.element.find("#view-container");
 
-      _setOption: function(key, value) {
-        var prev = this.options[key],
-          fnMap = {
-            books: function() {
-              // do somthing here.
-            }
-          };
+      self.circleDrawer = new CircleDrawer(
+        {
+          undoManager: self.undoManager,
+          height: 460
+        },
+        self.$view
+      );
 
-        // base
-        this._super(key, value);
+      self.updateUI();
+    },
 
-        if (key in fnMap) {
-          fnMap[key]();
+    /**
+     * Bind event listener.
+     * @private
+     */
+    _bindListener: function() {
+      var self = this;
 
-          // Fire event
-          this._triggerOptionChanged(key, prev, value);
+      self.element.on("click", "#btnUndo", function() {
+        self.undoManager.undo();
+        self.updateUI();
+      });
+
+      self.element.on("click", "#btnRedo", function() {
+        self.undoManager.redo();
+        self.updateUI();
+      });
+
+      self.element.on("click", "#btnClear", function() {
+        self.undoManager.clear();
+        self.updateUI();
+      });
+
+      self.element.on("click", "#btnClearView", function() {
+        self.circleDrawer.reset();
+        self.undoManager.clear();
+        self.updateUI();
+      });
+
+      self.element.on("change input", "#ctrlLimit", function(evt) {
+        var $target = $(evt.currentTarget),
+          limit = parseInt($target.val(), 10);
+
+        if (!isNaN(limit)) {
+          self.undoManager.setLimit(limit);
         }
-      },
+        self.updateUI();
+      });
+    },
 
-      _triggerOptionChanged: function(optionKey, previousValue, currentValue) {
-        this._trigger(
-          "setOption",
-          { type: "setOption" },
-          {
-            option: optionKey,
-            previous: previousValue,
-            current: currentValue
-          }
-        );
-      },
+    updateUI: function() {
+      this.$btnUndo.prop("disabled", !this.undoManager.hasUndo());
+      this.$btnRedo.prop("disabled", !this.undoManager.hasRedo());
+    }
+  });
 
-      _refresh: function(books) {
-        this.element.html(template({ books }));
-      },
-
-      /**
-       * The imported template should be used here to create the layout.
-       * @private
-       */
-      _render: function() {
-        const { books = [] } = this.options;
-
-        // create the dom of this gadget using its template.
-        this.element.html(template({ books }));
-      },
-
-      _fetchData: function(event, data) {
-        this.options.fetchData(data.handle);
-      },
-
-      _loadData: function() {
-        this._getFilters();
-      },
-
-      _loadFilters: function() {
-        axios
-          .get("/filters")
-          .then(({ data }) => {
-            dispatch({
-              type: FETCH_FILTER_FULFILLED,
-              payload: data
-            });
-          })
-          .catch(err => {
-            dispatch({
-              type: FETCH_FILTER_REJECTED,
-              payload: err
-            });
-          });
-      },
-
-      /**
-       * Bind event listener.
-       * @private
-       */
-      _bindListener: function() {
-        var self = this;
-
-        // refresh on changes to books
-        this.element.on("mywidgetsetoption", function(event, data) {
-          if (
-            data.option === "books" &&
-            !ObjectUtils.shallowEqual(data.current, data.previous)
-          ) {
-            self._refresh(data.current);
-          }
-        });
-
-        self.element.on("click", "#submit", function() {
-          self._fetchData(null, {
-            handle: self.element.find("#handle").val()
-          });
-        });
-
-        self.element.on("keyup", "#handle", function() {
-          if (event.keyCode === 13) {
-            $("#submit").click();
-          }
-        });
-      }
-    });
-
-    return connect(
-      // Given Redux state, return props
-      state => ({
-        books: selectors.getBooks(state),
-        isLoading: selectors.isLoading(state)
-      }),
-      // Given Redux dispatch, return callback props
-      dispatch => ({
-        fetchData(query) {
-          dispatch({
-            type: FETCH_DATA_PENDING,
-            payload: query
-          });
-          axios
-            .get(
-              `https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=40`
-            )
-            .then(({ data }) => {
-              dispatch({
-                type: FETCH_DATA_FULFILLED,
-                payload: data
-              });
-            })
-            .catch(err => {
-              dispatch({
-                type: FETCH_DATA_REJECTED,
-                payload: err
-              });
-            });
-        }
-      })
-    )(myWidget, window.store);
-  }
-);
+  return myWidget;
+});

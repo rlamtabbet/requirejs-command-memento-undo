@@ -1,16 +1,14 @@
-<div class="result">
-    <div class="input-group input-group-sm">
-        <input class="form-control" type="text" id="handle" placeholder="Search book title...">
-        <button id="submit" class="input-group-btn button">
-            Fetch
-        </button>
+<div class="container">
+    <div class="row">
+        <div class="form-inline">
+            <button type="button" class="btn btn-primary" id="btnUndo" disabled="disabled">Undo</button>
+            <button type="button" class="btn btn-primary" id="btnRedo" disabled="disabled">Redo</button>
+            <input type="number" min="0" max="10" class="form-control" id="ctrlLimit" placeholder="Limit: 0" />
+            <button type="button" class="btn btn-default" id="btnClear">Clear memory</button>
+            <button type="button" class="btn btn-default pull-right" id="btnClearView">Clear View</button>
+        </div>
+        <div id="view-container">
+        </div>
+        <p class="comment mute">Click on the area to create circles</p>
     </div>
-    <ul class="books_list">
-        {{#each books}}
-        <li>{{this}}</li>
-        {{/each}}
-    </ul>
-    <div class="filters"></div>
-    <div class="grid"></div>
-    <div class="progress"></div>
 </div>

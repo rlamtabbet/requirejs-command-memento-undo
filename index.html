@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Require JS Redux SlickGrid Example</title>
+  <title>Require JS Undo Manager Example</title>
   <script src="src/libs/log4javascript/log4javascript_uncompressed.js"></script>
   <script src="src/libs/require/require.js"></script>
 </head>
@@ -13,6 +13,7 @@
 
 <script>
   var logger = log4javascript.getLogger("RequireJSBasicsYoHolmes");
+
   logger.setLevel(log4javascript.Level.ALL);
   logger.addAppender(new log4javascript.BrowserConsoleAppender());
   window.logger = logger;
@@ -32,16 +33,7 @@
       hbs: "./libs/require-handlebars-plugin/hbs",
       jquery: './libs/jquery',
       jqueryui: "./libs/jquery-ui",
-      underscore: './libs/underscore',
-      backbone: './libs/backbone',
-      redux: './libs/redux',
-      thunk: './libs/redux-thunk',
-      axios: './libs/axios',
-
-      // SlickGrid
-      'libs/slickgrid/slick.core': 'libs/slickgrid/2.1/slick.core',
-      'libs/slickgrid/dragEvent': 'libs/slickgrid/2.1/lib/jquery.event.drag-2.2',
-      'libs/slickgrid/dropEvent': 'libs/slickgrid/2.1/lib/jquery.event.drop-2.2',
+      underscore: './libs/underscore'
     },
     hbs: {
       helpers: true, // default: true
@@ -72,26 +64,6 @@
         name: "underscore",
         location: "./libs/underscore",
         main: "underscore"
-      },
-      {
-        name: "backbone",
-        location: "./libs/backbone",
-        main: "backbone"
-      },
-      {
-        name: "redux",
-        location: "./libs/redux",
-        main: "redux"
-      },
-      {
-        name: "thunk",
-        location: "./libs/redux-thunk",
-        main: "redux-thunk"
-      },
-      {
-        name: "axios",
-        location: "./libs/axios",
-        main: "axios"
       }
     ],
     wrapShim: true,
@@ -106,36 +78,14 @@
         deps: ["underscore", "jquery"],
         exports: "Backbone"
       },
-      // SlickGrid
-      "libs/slickgrid/dragEvent": {
-        deps: ['jquery'],
-        exports: '$.fn.drag'
-      },
-      "libs/slickgrid/dropEvent": {
-        deps: ["jquery"],
-        exports: '$.fn.drop'
-      },
-      "libs/slickgrid/slick.core": {
-        deps: ["jquery"],
-        exports: "Slick"
-      },
-      "plugins/slickgrid/slick.grid": {
-        deps: ["jquery",
-          "slickgrid/slick.core",
-          "slickgrid/dragEvent",
-          "slickgrid/dropEvent"
-        ],
-        exports: "Slick.Grid"
-      },
       waitSeconds: 15
     }
   });
 
   require([
     'jquery.plugins',
-    'store',
     "views/myWidget"
-  ], function ($, store, MyWidget) {
+  ], function ($, MyWidget) {
 
     const view = new MyWidget({}, $('#simpleSelectah'));
 
