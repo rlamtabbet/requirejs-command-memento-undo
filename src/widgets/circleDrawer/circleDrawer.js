@@ -6,11 +6,34 @@ define([
 ], function($, IDGenerator, template) {
   "use strict";
 
-  var MIN_RADIUS = 10,
-    MAX_RADIUS = 40,
-    CANVAS_WIDTH = 600,
+  var CANVAS_WIDTH = 600,
     CANVAS_HEIGHT = 400,
+    MIN_RADIUS = 10,
+    MAX_RADIUS = 40,
     circleDrawer;
+
+  function getRandomColor() {
+    var intColor = Math.floor(Math.random() * (256 * 256 * 256)),
+      hexColor = parseInt(intColor, 10).toString(16);
+
+    return "#" + (hexColor.length < 2 ? "0" + hexColor : hexColor);
+  }
+
+  function getRandomRadius() {
+    return MIN_RADIUS + Math.random() * (MAX_RADIUS - MIN_RADIUS);
+  }
+
+  function hasSameColor(color, circle) {
+    return circle.color === color;
+  }
+
+  function rgb2hex(rgb) {
+    rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
+    function hex(x) {
+      return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+  }
 
   /**
    * circleDrawer.
@@ -50,11 +73,9 @@ define([
 
       this.drawingCanvas = drawingCanvas = this.$view.get(0);
 
-      if (drawingCanvas.getContext === undefined) {
-        return;
+      if (drawingCanvas.getContext !== undefined) {
+        this.drawingContext = drawingCanvas.getContext("2d");
       }
-
-      this.drawingContext = drawingCanvas.getContext("2d");
     },
 
     /**
@@ -66,10 +87,8 @@ define([
 
       self.element.on("click", "#view", function(evt) {
         var drawingCanvas = self.drawingCanvas,
-          intColor = Math.floor(Math.random() * (256 * 256 * 256)),
-          hexColor = parseInt(intColor, 10).toString(16),
-          color = "#" + (hexColor.length < 2 ? "0" + hexColor : hexColor),
-          radius = MIN_RADIUS + Math.random() * (MAX_RADIUS - MIN_RADIUS),
+          color = getRandomColor(),
+          radius = getRandomRadius(),
           mouseX = 0,
           mouseY = 0;
 
@@ -98,6 +117,101 @@ define([
           color: color
         });
       });
+
+      self.element.on("contextmenu", "#view", function(evt) {
+        var circles = self.options.circles,
+          drawingCanvas = self.drawingCanvas,
+          drawingContext = self.drawingContext,
+          color = getRandomColor(),
+          radius = getRandomRadius(),
+          mouseX = 0,
+          mouseY = 0,
+          pixel,
+          pixelColor,
+          prevCircle,
+          nextCircle;
+
+        if (evt.pageX || evt.pageY) {
+          mouseX = evt.pageX;
+          mouseY = evt.pageY;
+        } else if (evt.clientX || evt.clientY) {
+          mouseX =
+            evt.clientX +
+            document.body.scrollLeft +
+            document.documentElement.scrollLeft;
+          mouseY =
+            evt.clientY +
+            document.body.scrollTop +
+            document.documentElement.scrollTop;
+        }
+
+        mouseX -= drawingCanvas.offsetLeft;
+        mouseY -= drawingCanvas.offsetTop;
+
+        // get pixel under cursor
+        pixel = drawingContext.getImageData(mouseX, mouseY, 1, 1).data;
+
+        pixelColor = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;
+
+        prevCircle = circles.find(function(circle) {
+          return hasSameColor(rgb2hex(pixelColor), circle);
+        });
+
+        if (prevCircle) {
+          nextCircle = $.extend({}, prevCircle, {
+            x: mouseX,
+            y: mouseY,
+            color: color,
+            radius: radius
+          });
+
+          self.updateCircle(prevCircle.id, nextCircle);
+
+          // An alternative implementation to the Memento Pattern is to store
+          // the operations that are being used to change the state of the application
+          // rather than the state itself. This may require significantly fewer
+          // resources.
+          self.undoManager.queue({
+            undo: self.updateCircle.bind(self, prevCircle.id, prevCircle),
+            redo: self.updateCircle.bind(self, prevCircle.id, nextCircle)
+          });
+        }
+
+        return false;
+      });
+    },
+
+    _setOption: function(key, value) {
+      var self = this,
+        prev = this.options[key],
+        fnMap = {
+          circles: function() {
+            // re-draw
+            self.draw();
+          }
+        };
+
+      // base
+      this._super(key, value);
+
+      if (key in fnMap) {
+        fnMap[key]();
+
+        // Fire event
+        this._triggerOptionChanged(key, prev, value);
+      }
+    },
+
+    _triggerOptionChanged: function(optionKey, previousValue, currentValue) {
+      this._trigger(
+        "setOption",
+        { type: "setOption" },
+        {
+          option: optionKey,
+          previous: previousValue,
+          current: currentValue
+        }
+      );
     },
 
     reset: function() {
@@ -131,27 +245,36 @@ define([
       });
     },
 
+    updateCircle: function(id, nextCircle) {
+      var self = this,
+        circles = self.options.circles,
+        index = -1;
+
+      index = circles.findIndex(function(circle) {
+        return circle.id === id;
+      });
+
+      if (index !== -1) {
+        circles.splice(index, 1, nextCircle);
+      }
+
+      self.option("circles", circles);
+    },
+
     removeCircle: function(id) {
       var self = this,
         circles = self.options.circles,
-        i = 0,
         index = -1;
 
-      for (i = 0; i < circles.length; i += 1) {
-        if (circles[i].id === id) {
-          index = i;
-        }
-      }
-
-      // index = circles.findIndex(function(circle) {
-      //   parseInt(circle.id, 10) === parseInt(id, 10);
-      // });
+      index = circles.findIndex(function(circle) {
+        return circle.id === id;
+      });
 
       if (index !== -1) {
         circles.splice(index, 1);
       }
 
-      self.draw();
+      self.option("circles", circles);
     },
 
     createCircle: function(attrs) {
@@ -160,9 +283,13 @@ define([
 
       circles.push(attrs);
 
-      self.draw();
+      self.option("circles", circles);
 
-      self.undoManager.add({
+      // An alternative implementation to the Memento Pattern is to store
+      // the operations that are being used to change the state of the application
+      // rather than the state itself. This may require significantly fewer
+      // resources.
+      self.undoManager.queue({
         undo: self.removeCircle.bind(self, attrs.id),
         redo: self.createCircle.bind(self, attrs)
       });

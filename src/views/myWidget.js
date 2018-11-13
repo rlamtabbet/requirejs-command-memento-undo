@@ -18,7 +18,8 @@ define([
   var myWidget = $.widget("ux.myWidget", {
     options: {
       className: "ux-widget",
-      title: "Unavailable"
+      title: "Unavailable",
+      bufferSize: 5
     },
 
     _create: function() {
@@ -26,14 +27,13 @@ define([
 
       self.element.addClass(self.options.className);
 
-      self.boundUpdateUI = self.updateUI.bind(self);
-
-      self.undoManager = new UndoManager();
-      self.undoManager.setCallback(self.boundUpdateUI);
+      self.undoManager = new UndoManager({
+        callbackFn: self.updateUI.bind(self),
+        bufferSize: 5
+      });
 
       self._render();
       self._bindListener();
-
       self._super();
     },
 
@@ -97,7 +97,7 @@ define([
           limit = parseInt($target.val(), 10);
 
         if (!isNaN(limit)) {
-          self.undoManager.setLimit(limit);
+          self.undoManager.configure({ bufferSize: limit });
         }
         self.updateUI();
       });
