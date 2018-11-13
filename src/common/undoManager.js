@@ -30,6 +30,9 @@ define([], function() {
 
   /**
    * A simple undo and redo manager.
+   * @param {Object} options
+   * @param {string} [options.callbackFn] - The callback function to call for processing.
+   * @param {number} [options.bufferSize] - How many item we should hold on into.
    * @namespace common.constants
    */
   function UndoManager(options) {
@@ -47,7 +50,7 @@ define([], function() {
      * @param {Object} options
      * @param {string} [options.callbackFn] - The callback function to call for processing.
      * @param {number} [options.bufferSize] - How many item we should hold on into.
-     * @returns {this}
+     * @returns {UndoManager}
      */
     configure: function(options) {
       this.callbackFn = options.callbackFn || this.callbackFn;
@@ -62,7 +65,7 @@ define([], function() {
 
     /**
      * Clears the memory, losing all stored states. Reset the index.
-     * @returns {this}
+     * @returns {UndoManager}
      */
     clear: function() {
       var prevSize = this.size(),
@@ -80,8 +83,8 @@ define([], function() {
 
     /**
      * Appends the given command to the queue.
-     * @param {Array} items - Add the following items to the queue.
-     * @returns {this}
+     * @param {Array} command - Add the following items to the queue.
+     * @returns {UndoManager}
      */
     queue: function(command) {
       var callback = this.callbackFn,
@@ -117,6 +120,7 @@ define([], function() {
 
     /**
      * Perform undo: call the undo function at the current index and decrease the index by 1.
+     * @returns {UndoManager}
      */
     undo: function() {
       var queuedCommand = this.queuedCommands[this.index],
@@ -128,7 +132,7 @@ define([], function() {
 
       execute(this, queuedCommand, "undo");
 
-      this.index -= 1;
+      this.index--;
 
       if (typeof callback === "function") {
         callback();
@@ -139,6 +143,7 @@ define([], function() {
 
     /**
      * Perform redo: call the redo function at the next index and increase the index by 1.
+     * @returns {UndoManager}
      */
     redo: function() {
       var queuedCommand = this.queuedCommands[this.index + 1],
@@ -150,7 +155,7 @@ define([], function() {
 
       execute(this, queuedCommand, "redo");
 
-      this.index += 1;
+      this.index++;
 
       if (typeof callback === "function") {
         callback();
